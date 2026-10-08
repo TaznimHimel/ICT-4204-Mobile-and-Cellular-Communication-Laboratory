@@ -12,6 +12,7 @@ N = {
     "VLR": (5.2, 2.2, "#BA68C8", "Temporary\nlocation data"),
     "HLR": (8.2, 2.2, "#BA68C8", "Permanent\nsubscriber data"),
     "AuC": (10.9, 2.2, "#BA68C8", "Authentication\nkey data"),
+    "Other Networks": (9.8, 7.2, "#B0BEC5", "Other networks\n(Internet, PSTN, etc.)")
 }
 
 # Communication flow: (কোথা থেকে, কোথায়, কাজ)
@@ -24,7 +25,8 @@ S = [("MS", "BTS", "Call request (radio)"),
      ("MSC", "EIR", "Is the phone allowed? (IMEI check)"),
      ("MSC", "BSC", "All OK, connect the call"),
      ("BSC", "BTS", "Assign radio channel"),
-     ("BTS", "MS", "Call connected")]
+     ("BTS", "MS", "Call connected"),
+     ("MSC", "Other Networks", "Connect to other networks")]
 
 fig, ax = plt.subplots(figsize=(12, 7))
 fig.patch.set_facecolor("#F5F7FA")
@@ -32,7 +34,7 @@ ax.set(xlim=(0, 12), ylim=(0, 8)); ax.axis("off")
 ax.set_title("GSM Network Architecture & Call Flow", fontsize=17, weight="bold")
 
 # লাইন (সংযোগ)
-for a, b in [("MS", "BTS"), ("BTS", "BSC"), ("BSC", "MSC")] + [("MSC", d) for d in ("VLR", "HLR", "AuC", "EIR")]:
+for a, b in [("MS", "BTS"), ("BTS", "BSC"), ("BSC", "MSC"), ("MSC", "Other Networks")] + [("MSC", d) for d in ("VLR", "HLR", "AuC", "EIR")]:
     ax.plot([N[a][0], N[b][0]], [N[a][1], N[b][1]], c="gray", lw=2, zorder=1)
 
 # বাক্স
