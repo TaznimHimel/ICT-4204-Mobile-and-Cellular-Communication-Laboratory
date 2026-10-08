@@ -1,68 +1,51 @@
-import numpy as np
-import matplotlib.pyplot as plt
+import numpy as np, matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
-# 1. Base Station position
-BS1 = 0
-BS2 = 1000
-
-# 2. Mobile moves from Cell 1 to Cell 2
 x = np.arange(1, 1000)
+rss = lambda bs: 40 - 40 - 10*3*np.log10(abs(x - bs))   # Pt - PL0 - 10*n*log10(d)
+R1, R2 = rss(0), rss(1000)
 
-# 3. Distance from each Base Station
-d1 = abs(x - BS1)
-d2 = abs(x - BS2)
+i = np.argmin(abs(R1 - R2)); h = x[i]
+print("Handover Point:", h, "m | RSS:", round(R1[i], 2), "dBm")
 
-# 4. Received Signal Strength (RSS)
-Pt = 40
-PL0 = 40
-n = 3
+fig, (a, b) = plt.subplots(1, 2, figsize=(15, 6))
+fig.suptitle("Two-Cell Handover Simulation", fontsize=16, weight="bold")
 
-RSS1 = Pt - PL0 - 10 * n * np.log10(d1)
-RSS2 = Pt - PL0 - 10 * n * np.log10(d2)
+# বাম: RSS graph
+a.plot(x, R1, color="tab:blue", lw=2, label="Cell 1 (BS1)")
+a.plot(x, R2, color="tab:red", lw=2, label="Cell 2 (BS2)")
+a.axvspan(0, h, color="tab:blue", alpha=.08)
+a.axvspan(h, 1000, color="tab:red", alpha=.08)
+a.axvline(h, ls="--", c="gray", label=f"Handover ({h} m)")
+a.set(xlabel="Mobile Position (m)", ylabel="RSS (dBm)", title="Signal Strength")
+a.legend(); a.grid(alpha=.3)
 
-# 5. Find handover point
-i = np.argmin(abs(RSS1 - RSS2))
-handover = x[i]
+dot1, = a.plot([], [], "ko", ms=9)                               # কালো: handover-এর আগে
+dot2, = a.plot([], [], "o", c="gold", mec="k", ms=12, zorder=5)  # হলুদ: handover-এর পরে
 
-# 6. Display result
-print("===================================")
-print("   HANDOVER SIMULATION")
-print("===================================")
-print("Mobile moves : Cell 1 -> Cell 2")
-print("Handover Point :", handover, "meters")
-print("RSS at Handover:")
-print("Cell 1 :", round(RSS1[i], 2), "dBm")
-print("Cell 2 :", round(RSS2[i], 2), "dBm")
-print("===================================")
+# ডান: Cell map
+t = np.linspace(0, 2*np.pi, 7)
+for n, c in enumerate(["tab:blue", "tab:red"]):
+    bs = n * 1000
+    b.fill(bs + 500*np.cos(t), 500*np.sin(t), color=c, alpha=.15)
+    b.plot(bs, 0, "^", color=c, ms=14)
+    b.text(bs, -90, f"BS{n+1}", ha="center", weight="bold")
+b.axvline(h, ls="--", c="gray")
+b.set(xlim=(-600, 1600), ylim=(-600, 600), title="Cell Map")
+b.set_aspect("equal"); b.grid(alpha=.3)
+mobile, = b.plot([], [], "o", c="green", ms=12)
+status = b.text(500, 520, "", ha="center", fontsize=13, weight="bold")
 
-# 7. Plot
-plt.figure(figsize=(10, 6))
+def update(k):
+    mobile.set_data([x[k]], [0])
+    left = x[k] < h
+    if left:
+        dot1.set_data([x[k]], [R1[k]]); dot2.set_data([], [])
+    else:
+        dot1.set_data([], []); dot2.set_data([x[k]], [R2[k]])
+    status.set_text("Connected: BS1" if left else "Handover: BS1 -> BS2")
+    status.set_color("tab:blue" if left else "tab:red")
+    return mobile, dot1, dot2, status
 
-plt.plot(x, RSS1, label="Cell 1 RSS", linewidth=2)
-plt.plot(x, RSS2, label="Cell 2 RSS", linewidth=2)
-
-# Mark handover point
-plt.scatter(handover, RSS1[i], s=100, label="Handover Point")
-plt.axvline(handover, linestyle="--", linewidth=2)
-
-# Show Base Stations
-plt.scatter(BS1, -45, s=120, marker="^", label="Base Station 1")
-plt.scatter(BS2, -45, s=120, marker="^", label="Base Station 2")
-
-# Write handover text
-plt.annotate(
-    f"HANDOVER\n{handover} m",
-    xy=(handover, RSS1[i]),
-    xytext=(handover + 80, RSS1[i] + 15),
-    arrowprops=dict(arrowstyle="->"),
-    fontsize=11
-)
-
-plt.xlabel("Mobile Position (meter)")
-plt.ylabel("Received Signal Strength (dBm)")
-plt.title("Handover Between Two Cellular Cells")
-
-plt.legend()
-plt.grid(True)
-plt.tight_layout()
-plt.show()
+ani = FuncAnimation(fig, update, frames=range(0, len(x), 5), interval=20, repeat=False)
+plt.tight_layout(); plt.show()
